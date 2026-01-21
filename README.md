@@ -1,4 +1,4 @@
-mathm is a very flexible calculator meant to run from terminal or fltk gui. I am mainly building it for when solving crackmes.
+mathm is a very flexible math-menu/calculator meant to run from terminal or fltk gui. I am mainly building it for when solving crackmes.
 
 Planned features
 - Basic math expected of all calculators with PEMDAS.
