@@ -1,6 +1,6 @@
 CPP= g++ -g
-CFLAGS=
-LFLAGS=
+CFLAGS= 
+LFLAGS= -lgmp -lgmpxx
 SRC= parser.cpp
 
 run: main
