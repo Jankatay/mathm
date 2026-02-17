@@ -8,6 +8,7 @@
 #include <sstream>
 #include <cassert>
 #include <string>
+#include <vector>
 #include <deque>
 #include <map>
 
@@ -23,11 +24,11 @@ enum TOK_T {
   COMMA,
 
   // operators
-  RSHIFT, LSHIFT, EXP,
+  RSHIFT, LSHIFT, 
   ADD, SUB, MUL, DIV,     
 
   // values
-  NUM, STR, ASM
+  NUM, STR, ASM, ARR // arr is special
 };
 
 
@@ -38,7 +39,7 @@ static const map<char, TOK_T> tokenMap = {
   {'{', OP_CURL}, {'}', CL_CURL},
   {'+', ADD}, {'-', SUB},
   {'*', MUL}, {'/', DIV},
-  {',', COMMA}, {'^', EXP},
+  {',', COMMA},
 };
 
 
@@ -54,7 +55,8 @@ struct Token {
 
   // safely get number or string data 
   string text() { assert(type == STR); return str; }
-  mpf_class number() { assert(type == NUM); return num; }
+  mpq_class& number() { assert(type == NUM); return num; }
+  vector<Token>& list() { return arr; }
   TOK_T get() { return type; }
 
   private:
@@ -62,6 +64,7 @@ struct Token {
   // I would rather have this tradeoff 
   string str = "";
   mpq_class num = mpq_class();
+  vector<Token> arr;
   // the actual token is public
   TOK_T type;
 };

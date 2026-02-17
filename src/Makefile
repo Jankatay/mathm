@@ -1,13 +1,13 @@
-CPP= g++ -g
+CPP= g++ -g -O0
 CFLAGS= 
 LFLAGS= -lgmp -lgmpxx
-SRC= parser.cpp
+SRC= shunt.cpp
 
 run: main
 	./$<
 
 main: $(SRC)
-	$(CPP) $(CFLAGS) -o $@ $^ $(LFLAGS) -DTEST_PARSER
+	$(CPP) $(CFLAGS) -o $@ $^ $(LFLAGS) -DTEST_SHUNT
 
 .PHONY: clean
 clean:
