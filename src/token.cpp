@@ -1,6 +1,7 @@
-#ifndef PARSER_CPP
-#define PARSER_CPP
+#pragma once
 
+
+// include
 #include "gmp/gmp.h"
 #include "gmp/gmpxx.h"
 
@@ -49,24 +50,25 @@ struct Token {
   // values are either numeric or string 
   Token(TOK_T token) : type(token) {}
   Token(string str) : type(STR), str(str) {}
-  Token(mpq_t value) : type(NUM) {
-    num = mpq_class(value);
+  Token(mpf_class value) : type(NUM), num(value) {}
+  Token(mpf_t value) : type(NUM) {
+    num = mpf_class(value);
   }
 
   // safely get number or string data 
   string text() { assert(type == STR); return str; }
-  mpq_class& number() { assert(type == NUM); return num; }
+  mpf_class& number() { assert(type == NUM); return num; }
   vector<Token>& list() { return arr; }
-  TOK_T get() { return type; }
+
+  // the actual token is public
+  TOK_T type;
 
   private:
   // Classes with unions in them is slightly weird in C++ 
   // I would rather have this tradeoff 
   string str = "";
-  mpq_class num = mpq_class();
+  mpf_class num = mpf_class();
   vector<Token> arr;
-  // the actual token is public
-  TOK_T type;
 };
 
 
@@ -94,12 +96,26 @@ Token tokText(string& str, ssize_t& len, size_t start = 0, char lit = '"') {
 // also sets buf to the result but only canonicalizes on success
 // ---------------------------------------------------------------------------
 Token tokNumeral(string& str, ssize_t& len, size_t start) {
-  //TODO: use GMP library for this part
-  mpq_t res;
-  mpq_init(res);
-  gmp_sscanf(str.c_str() + start, "%Qi%n", res, &len);
-  if(len <= 0) return Token(NIL);
-  return Token(res);
+  // sanitize
+  len = -1;
+  Token res = Token(NIL);
+  if(str.length() < 1) return Token(NIL);
+
+  // get length, produce substring
+  string sub = str.substr(start);
+  len = sub.find_first_not_of("+-"); // sign
+  len += sub.substr(len).find_first_not_of("0123456789beox.");
+  if(len >= 0) sub.erase(len);
+  else len = sub.length();
+
+  // try integers first and float second.
+  mpz_class itmp; mpf_class ftmp;
+  if(itmp.set_str(sub, 0) >= 0) return Token(itmp);
+  if(ftmp.set_str(sub, 0) >= 0) return Token(ftmp);
+
+  // otherwise error
+  len = -1;
+  return Token(NIL);
 }
 
 
@@ -168,18 +184,15 @@ deque<Token> tokenize(string equation, bool &status) {
 #ifdef TEST_PARSER
 int main() {
   bool status = false;
-  deque<Token> tokens = tokenize("(123) + \"hello, world\" * 5 ", status);
+  deque<Token> tokens = tokenize("(0b1) + \"hello, world\" * 5 ", status);
   while(!tokens.empty()) {
     Token token = tokens.front();
     tokens.pop_front();
-    if(token.get() == NUM) cout << token.number() << endl;
-    else if(token.get() == STR) cout << token.text() << endl;
-    else cout << token.get() << endl;
+    if(token.type == NUM) cout << token.number() << endl;
+    else if(token.type == STR) cout << token.text() << endl;
+    else cout << token.type << endl;
   }
   if(!status) return 1;
   return 0;
 }
-#endif
-
-
 #endif

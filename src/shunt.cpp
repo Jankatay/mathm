@@ -1,6 +1,7 @@
-#ifndef SHUNT_CPP
-#define SHUNT_CPP
+#pragma once
 
+
+// include
 #include "token.cpp"
 #include <stack>
 #include <queue>
@@ -19,13 +20,24 @@ struct Ast {
   bool resolve(); 
 };
 
+
+// calculate an operator for two given Asts
+// ---------------------------------------------------------------------------
 bool calculate(Ast& left, TOK_T optr, Ast& right) {
-  TOK_T ltype = left.data.get();
-  TOK_T rtype = right.data.get();
+  TOK_T ltype = left.data.type;
+  TOK_T rtype = right.data.type;
 
   // handle arrays
   if(ltype == ARR) for(auto& elem : left.children) calculate(elem, optr, right); 
-  if(rtype == ARR) for(auto& elem : right.children) calculate(left, optr, elem);
+  else if(rtype == ARR) {
+    Ast res = Token(ARR);
+    for(auto& elem : right.children) {
+      Ast tmp = left;
+      calculate(tmp, optr, elem);
+      res.children.push_back(tmp);
+    }
+    left = res;
+  }
   if((ltype == ARR) || (rtype == ARR)) return true; // handled
 
   // calculate 
@@ -69,9 +81,9 @@ const map<TOK_T, int> shuntMap = {
 bool pushOutput(vector<Ast>& output, Ast optr) {
   // math operators
   if(output.size() < 2) return false;
-  bool invalid = (optr.data.get() != ADD) && (optr.data.get() != SUB);
-  invalid &= (optr.data.get() != MUL) && (optr.data.get() != DIV);
-  invalid &= (optr.data.get() != RSHIFT) && (optr.data.get() != LSHIFT);
+  bool invalid = (optr.data.type != ADD) && (optr.data.type != SUB);
+  invalid &= (optr.data.type != MUL) && (optr.data.type != DIV);
+  invalid &= (optr.data.type != RSHIFT) && (optr.data.type != LSHIFT);
   if(invalid) return false;
 
   // get two children for the operator
@@ -121,11 +133,17 @@ bool pushOptr(stack<thash>& optr, vector<Ast>& output, TOK_T tok, int weight) {
   // on comma and }, manage array
   if((tok == COMMA) || (tok == CL_CURL)) {
     // safely get the values 
-    if(output.size() < 2) return false;
+    if(output.size() < 1) return false;
     Ast child = output.back(); output.pop_back();
+    // empty set
+    if(child.data.type == ARR) {
+      output.push_back(child);
+      return true;
+    }
+    // fill list and link otherwise
+    if(output.size() < 1) return false;
     Ast parent = output.back(); output.pop_back();
-    if(parent.data.get() != ARR) return false;
-    // link
+    if(parent.data.type != ARR) return false;
     parent.children.push_back(child);
     output.push_back(parent);
     return true;
@@ -149,7 +167,7 @@ vector<Ast> shunt(deque<Token> data, bool& status) {
   // while getting tokens 
   for(Token token : data) {
     // get the weight and sanitize
-    auto shash = shuntMap.find(token.get());
+    auto shash = shuntMap.find(token.type);
     if(shash == shuntMap.end()) return output;
     int weight = shash->second;
 
@@ -185,7 +203,7 @@ vector<Ast> shunt(deque<Token> data, bool& status) {
 // ---------------------------------------------------------------------------
 void Ast::print(size_t depth) {
   for(size_t i = 0; i < depth; i++) printf("\t");
-  switch(data.get()) {
+  switch(data.type) {
   case MUL: printf("MUL\n"); break;
   case ADD: printf("ADD\n"); break;
   case SUB: printf("SUB\n"); break;
@@ -203,18 +221,24 @@ void Ast::print(size_t depth) {
 // ---------------------------------------------------------------------------
 bool Ast::resolve() {
   // base cases, numbers
-  if(data.get() == NUM) return true;
+  if((data.type == ARR) && (children.size() == 1)) {
+    children[0].resolve();
+    *this = children[0];
+    return true;
+  }
+  if(data.type == NUM) return true;
 
   // string, split into array of bytes
-  if(data.get() == STR) {
+  if(data.type == STR) {
     for(char c : data.text()) {
       // init number 
-      mpq_t tmp;
-      mpq_init(tmp);
+      mpf_t tmp;
+      mpf_init(tmp);
       // set value to the ASCII and push
-      mpq_set_d(tmp, c);
+      mpf_set_d(tmp, c);
       children.push_back(Token(tmp));
     }
+    data.type = ARR;
     return true;
   }
 
@@ -224,12 +248,13 @@ bool Ast::resolve() {
   for(Ast& child : children)  {
     if(!child.resolve()) return false;
   }
+  if(data.type == ARR) return true;
 
   // node is an operator
   if(children.size() != 2) return false;
   Ast right = children.back(); children.pop_back();
   Ast left = children.back(); children.pop_back();
-  if(!calculate(left, data.get(), right)) return false;
+  if(!calculate(left, data.type, right)) return false;
   *this = left;
 
   // success
@@ -237,23 +262,20 @@ bool Ast::resolve() {
 }
 
 
-//#ifdef TEST_SHUNT
+#ifdef TEST_SHUNT
 int main() {
   bool status = false;
-  deque<Token> tokens = tokenize("(12 + 5)/(99 - 1 - 2 - 3 - 4 * 20)", status);
+  deque<Token> tokens = tokenize("{1, {2, 3}, 3}", status);
   if(!status) return 1;
   
   vector<Ast> ast = shunt(tokens, status);
   if(!status) return 1;
 
-  Ast head = ast.front(); ast.pop_back();
-  head.print();
-  if(!head.resolve()) return 1;
-  head.print();
+  for(auto& elem : ast) {
+    if(!elem.resolve()) return 1;
+    elem.print();
+  }
 
   return 0;
 }
-//#endif
-
-
 #endif

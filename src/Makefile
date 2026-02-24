@@ -1,13 +1,13 @@
 CPP= g++ -g -O0
 CFLAGS= 
 LFLAGS= -lgmp -lgmpxx
-SRC= shunt.cpp
+SRC= cli.cpp convert.cpp shunt.cpp token.cpp
 
 run: main
 	./$<
 
 main: $(SRC)
-	$(CPP) $(CFLAGS) -o $@ $^ $(LFLAGS) -DTEST_SHUNT
+	$(CPP) $(CFLAGS) -o $@ $< $(LFLAGS) -DCLI
 
 .PHONY: clean
 clean:
