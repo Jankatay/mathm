@@ -101,17 +101,18 @@ Token tokNumeral(string& str, ssize_t& len, size_t start) {
   Token res = Token(NIL);
   if(str.length() < 1) return Token(NIL);
 
-  // get length, produce substring
-  string sub = str.substr(start);
-  len = sub.find_first_not_of("+-"); // sign
-  len += sub.substr(len).find_first_not_of("0123456789beox.");
-  if(len >= 0) sub.erase(len);
-  else len = sub.length();
+  // try parsing a number, don't include the sign
+  string cpy = str.substr(start);
+  int end = cpy.find_first_not_of("0123456789abcdefABCDEFbeox.");
+  if(end == 0) return Token(NIL);
+  if(end < 0) end = cpy.length();
+  cpy.erase(end);
+  len = end;
 
   // try integers first and float second.
   mpz_class itmp; mpf_class ftmp;
-  if(itmp.set_str(sub, 0) >= 0) return Token(itmp);
-  if(ftmp.set_str(sub, 0) >= 0) return Token(ftmp);
+  if(itmp.set_str(cpy, 0) >= 0) return Token(itmp);
+  if(ftmp.set_str(cpy, 0) >= 0) return Token(ftmp);
 
   // otherwise error
   len = -1;
@@ -127,31 +128,32 @@ deque<Token> tokenize(string equation, bool &status) {
   deque<Token> res = deque<Token>();
   string buf = "";
   status = false;
+  bool prevOptr = true; // previous was an operator or not
 
   // for each character in the equation
   for(size_t i = 0; i < equation.length(); i++) {
     if(isspace(equation[i])) continue;
-
-    // Token is in the simple list
     auto mapvalue = tokenMap.find(equation[i]);
-    if(mapvalue != tokenMap.end()) {
-      Token token = Token(mapvalue->second);
-      res.push_back(token);
+
+    // trivial list, it's a minus as a sign
+    if(prevOptr && (mapvalue->second == SUB)) {
+      res.push_back(Token(-1));
+      res.push_back(MUL);
       continue;
     }
 
-    // tokens with 2 characters
-    string optr = equation.substr(i, 2);
-    if((optr == ">>") || (optr == "<<")) {
-      res.push_back((optr == "<<") ? LSHIFT : RSHIFT);
-      i++; // since we took two letters for this token
+    prevOptr = false;
+    // Check the trivial list last
+    if(mapvalue != tokenMap.end()) {
+      Token token = Token(mapvalue->second);
+      res.push_back(token);
+      prevOptr = true;
       continue;
     }
 
     // parse for string first, if invalid parse for asm code
-    ssize_t llen = false;
+    ssize_t llen = -1;
     Token buf = tokText(equation, llen, i);
-    buf = tokText(equation, llen, i, '"');
     if(llen <= 0) buf = tokText(equation, llen, i, '`');
 
     // if either of them worked we are good
@@ -166,6 +168,14 @@ deque<Token> tokenize(string equation, bool &status) {
     if(llen > 0) {
       res.push_back(val);
       i += llen-1; // -1 because iterator handles that already
+      continue;
+    }
+
+    // tokens with 2 characters
+    string optr = equation.substr(i, 2);
+    if((optr == ">>") || (optr == "<<")) {
+      res.push_back((optr == "<<") ? LSHIFT : RSHIFT);
+      i++; // since we took two letters for this token
       continue;
     }
   
@@ -196,3 +206,5 @@ int main() {
   return 0;
 }
 #endif
+
+

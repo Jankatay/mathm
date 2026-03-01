@@ -1,6 +1,6 @@
 CPP= g++ -g -O0
-CFLAGS= 
-LFLAGS= -lgmp -lgmpxx
+CFLAGS= -Igmp -Lgmp -static
+LFLAGS= -lgmpxx -lgmp # The order of these two matter believe it or not
 SRC= cli.cpp convert.cpp shunt.cpp token.cpp
 
 run: main

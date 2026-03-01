@@ -162,10 +162,10 @@ const static int calcCommandline(string equation) {
 
   // print
   bool s = true;
-  cout << "Dec -> " << getbase(res, 10, s) << endl;
-  cout << "Hex -> " << getbase(res, 16, s) << endl;
-  cout << "Oct -> " << getbase(res, 8, s) << endl;
-  cout << "Bin -> " << getbase(res, 1, s) << endl;
+  cout << "Dec -> " << getbase(res, Dec, s) << endl;
+  cout << "Hex -> " << getbase(res, Hex, s) << endl;
+  cout << "Oct -> " << getbase(res, Oct, s) << endl;
+  cout << "Bin -> " << getbase(res, Bin, s) << endl;
 
   return s? EXIT_SUCCESS : EXIT_FAILURE;
 }

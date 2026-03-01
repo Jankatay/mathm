@@ -3,32 +3,58 @@
 
 // include
 #include <string>
+#include <sstream>
 #include "shunt.cpp"
 
+
+// number formats
+enum Format {
+  Bin = 2,
+  Oct = 8,
+  Dec = 10,
+  Hex = 16
+};
 
 // Convert result of Ast to a base-string, if Ast is array, uses {...} syntax
 // Sets status false on error, doesn't run at all if status=false
 // ---------------------------------------------------------------------------
-static mp_exp_t IGNORE;
-string getbase(const Ast& val, int base, bool& status) {
+string getbase(const Ast& val, Format fmt, bool& status) {
   if(!status) return "";
 
   // init optimisticly
-  status = true;  
   Token tok = val.data;
+  status = true;  
 
-  // base case, flat values
-  if(tok.type == NUM) return tok.number().get_str(IGNORE, base);
-  if(tok.type == STR) return tok.text();
+  // recurse on arrays
+  if(tok.type == ARR) {
+    // write all the values in a c-like array
+    string res = "{";
+    for(auto& elem : val.children) 
+      res += getbase(val, fmt, status) + ",";
+    res.back() = '}'; // replaces ',' at the end also
+    return res;
+  }
 
-  // sanitize before recursion, no early-return since status of false skips anyway
+  // sanitize before recursion, early-return unneeded since status=false skips anyway
   if(tok.type != ARR) status = false;
 
-  // write all the values in a c-like array
-  string arrstring = "{";
-  for(auto& elem : val.children) arrstring += getbase(val, base, status);
-  arrstring += "}";
+  // get length
+  mp_exp_t len;
+  string res = tok.number().get_str(len, -fmt);
+  long diff = abs(len) - res.length();
+
+  // find leading/trailing zeros
+  string zeros = "";
+  for(int i = 0; (i < diff) && (diff < 20); i++) zeros += '0';
+
+  // either use scientif notation, 
+  if(diff > 20) res += ((len > 0) ? "E+" : "E-") + to_string(diff);
+  // or prepend/append the zeros
+  else if(len > 1) res = res + zeros;
+  //TODO: floating numbers below 0
+  else if(len < 1) res = zeros + "." + res;
 
   // finish 
-  return arrstring;
+  status = true;
+  return res;
 }
