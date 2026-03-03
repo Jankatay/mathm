@@ -41,6 +41,7 @@ string getbase(const Ast& val, Format fmt, bool& status) {
   // get length
   mp_exp_t len;
   string res = tok.number().get_str(len, -fmt);
+  if(len < 1) len--;
   long diff = abs(len) - res.length();
 
   // find leading/trailing zeros
@@ -50,9 +51,8 @@ string getbase(const Ast& val, Format fmt, bool& status) {
   // either use scientif notation, 
   if(diff > 20) res += ((len > 0) ? "E+" : "E-") + to_string(diff);
   // or prepend/append the zeros
-  else if(len > 1) res = res + zeros;
-  //TODO: floating numbers below 0
-  else if(len < 1) res = zeros + "." + res;
+  if(len > 1) res = res + zeros;
+  if(len < 1) res = "." + zeros + res;
 
   // finish 
   status = true;

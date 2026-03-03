@@ -162,6 +162,7 @@ const static int calcCommandline(string equation) {
 
   // print
   bool s = true;
+  cout << "Nrm -> " << res.data.number() << endl;
   cout << "Dec -> " << getbase(res, Dec, s) << endl;
   cout << "Hex -> " << getbase(res, Hex, s) << endl;
   cout << "Oct -> " << getbase(res, Oct, s) << endl;
