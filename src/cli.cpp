@@ -132,7 +132,13 @@ const static int calcInteractive() {
   string buf;
 
   // while getting delimited input 
+  bool exiting = false;
   while(getline(cin, buf)) {
+    // handle exiting
+    exiting |= buf == "quit";
+    exiting |= buf == "exit";
+    exiting |= buf == "q";
+    if(exiting) break;
     // calculate and print
     int res = calcCommandline(buf);
     if(res == EXIT_FAILURE) return res;

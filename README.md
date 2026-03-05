@@ -7,4 +7,3 @@ Progress : Just started.
 - More advanced math like algebra
 - Output in hex and binary
 - String to bytes and bytes to string.
-- x64 assembly to bytes and bytes to x64 assembly.
