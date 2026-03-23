@@ -30,7 +30,7 @@ string getbase(const Ast& val, Format fmt, bool& status) {
     // write all the values in a c-like array
     string res = "{";
     for(auto& elem : val.children) 
-      res += getbase(val, fmt, status) + ",";
+      res += getbase(elem, fmt, status) + ",";
     res.back() = '}'; // replaces ',' at the end also
     return res;
   }

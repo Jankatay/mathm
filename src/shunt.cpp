@@ -242,8 +242,6 @@ bool Ast::resolve() {
     return true;
   }
 
-  // TODO: asm using libcapstone
-
   // first resolve the children
   for(Ast& child : children)  {
     if(!child.resolve()) return false;
